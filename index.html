@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intercom Pro - Base de Datos Completa T-510R</title>
+    <title>Intercom Pro - Diagnóstico T-510R</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .sticky-header { position: sticky; top: 0; z-index: 50; }
@@ -34,6 +34,170 @@
 
         <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
             <div class="grid grid-cols-3 bg-slate-800 text-white p-4 text-[10px] font-bold uppercase tracking-widest">
+                <div>Conexión</div>
+                <div class="text-center" id="nameO">Origen</div>
+                <div class="text-center" id="nameD">Destino</div>
+            </div>
+            
+            <div id="tableBody" class="divide-y divide-slate-100"></div>
+        </div>
+
+        <div id="tecnico" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <hr class="my-8 border-slate-200">
+
+        <div class="bg-slate-900 rounded-3xl p-6 shadow-2xl">
+            <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="bg-yellow-400 text-black px-2 py-0.5 rounded text-sm uppercase">Nuevo</span> 
+                Asistente de Diagnóstico
+            </h2>
+            <p class="text-slate-400 text-sm mb-6">Selecciona el síntoma para saber qué cable revisar en tu modelo seleccionado.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="diagnosticoGrid">
+                </div>
+
+            <div id="resultadoDiagnostico" class="mt-6 hidden animate-pulse">
+                <div class="bg-blue-600 p-5 rounded-2xl text-white">
+                    <p class="text-xs uppercase font-bold opacity-80 mb-1">Causa probable:</p>
+                    <p id="diagTexto" class="text-lg font-medium"></p>
+                    <div id="diagBorne" class="mt-3 inline-block bg-white text-blue-600 px-4 py-2 rounded-xl font-black text-2xl"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DATA = {
+            "aiphone_vc_k": { n: "Aiphone VC-K", b: { a: "4", m: "2", g: "3", s: "1", le: "B", lz: "B" }, note: "Marca japonesa, configuración especial." },
+            "alcad_901": { n: "Alcad 901/901C", b: { a: "1", m: "3", g: "4", s: "2", le: "2", lz: "2" }, note: "Muy común en kits de edificios pequeños." },
+            "amplyvox_elite": { n: "Amplyvox (Elite/Audiola)", b: { a: "6", m: "1", g: "0", s: "2", le: "E", lz: "E" }, note: "El 0 es la masa." },
+            "auta_tf92": { n: "Auta TF-92", b: { a: "10", m: "3", g: "4", s: "12", le: "7", lz: "7" }, note: "Cuidado con la tensión del abrepuertas." },
+            "bell_system": { n: "Bell System", b: { a: "5", m: "2", g: "3", s: "1", le: "4", lz: "4" }, note: "Configuración inglesa." },
+            "bitron_an002": { n: "Bitron AN0002/AK5010", b: { a: "9", m: "2", g: "6", s: "1", le: "C7", lz: "C7" }, note: "C7 es llamada." },
+            "bpt_yc200": { n: "BPT YC/200-YC/250", b: { a: "4", m: "1", g: "3", s: "2", le: "5", lz: "5" }, note: "BPT usa 1 y 2 para audio." },
+            "comelit_ok": { n: "Comelit (OK/Ciao)", b: { a: "P1", m: "2", g: "3", s: "4", le: "S", lz: "S" }, note: "S es Signal/Llamada." },
+            "elvox_8870": { n: "Elvox 8870 / 131", b: { a: "7", m: "2", g: "3", s: "1", le: "6", lz: "6" }, note: "Masa en el 3." },
+            "farfisa_md30": { n: "Farfisa MD30/Studio", b: { a: "9", m: "2", g: "3", s: "1", le: "7", lz: "7" }, note: "Clásico italiano." },
+            "fermax_city": { n: "Fermax Cityline / Universal", b: { a: "1", m: "2", g: "3", s: "6", le: "4", lz: "4" }, note: "El estándar en España." },
+            "frandor": { n: "Frandor", b: { a: "5", m: "3", g: "1", s: "2", le: "4", lz: "4" }, note: "Nomenclatura antigua." },
+            "golmar_t510r": { n: "Golmar T-510R / T-710R", b: { a: "P1", m: "5", g: "3", s: "10", le: "7", lz: "0" }, note: "Este modelo sustituye a casi todos." },
+            "golmar_as": { n: "Golmar Serie AS", b: { a: "1", m: "2", g: "3", s: "4", le: "6", lz: "6" }, note: "Gama antigua de Golmar." },
+            "itb": { n: "ITB", b: { a: "1", m: "4", g: "3", s: "2", le: "5", lz: "5" }, note: "Configuración estándar." },
+            "ostelvi": { n: "Ostelvi", b: { a: "9", m: "2", g: "6", s: "1", le: "7", lz: "7" }, note: "Similar a Urmet." },
+            "ritto_elegance": { n: "Ritto Elegance", b: { a: "5", m: "12", g: "13", s: "11", le: "15", lz: "15" }, note: "Marca alemana, bornes altos." },
+            "safnat": { n: "Safnat", b: { a: "4", m: "1", g: "2", s: "3", le: "5", lz: "5" }, note: "Poco común." },
+            "selti": { n: "Selti", b: { a: "5", m: "1", g: "3", s: "2", le: "6", lz: "6" }, note: "Similar a BPT." },
+            "siedle_ht611": { n: "Siedle HT-611-01", b: { a: "I", m: "2", g: "9", s: "1", le: "7", lz: "7" }, note: "I es abrepuertas." },
+            "str_ht2000": { n: "STR HT2000", b: { a: "I", m: "M", g: "O", s: "S", le: "7", lz: "7" }, note: "Nomenclatura por letras." },
+            "tegui_hor": { n: "Tegui Horizon / Serie 7", b: { a: "3", m: "4", g: "2", s: "5", le: "1", lz: "1" }, note: "El 2 es la masa." },
+            "tegui_gl": { n: "Tegui GL", b: { a: "3", m: "4", g: "2", s: "5", le: "1", lz: "1" }, note: "Igual que Horizon." },
+            "televes": { n: "Televes", b: { a: "T", m: "2", g: "3", s: "1", le: "6", lz: "6" }, note: "T es abrepuertas." },
+            "urmet_1131": { n: "Urmet 1131 / 1132 / 1133", b: { a: "9", m: "2", g: "6", s: "1", le: "7", lz: "CA" }, note: "CA es llamada electrónica, 7 es zumbador." },
+            "videx": { n: "Videx", b: { a: "5", m: "2", g: "3", s: "1", le: "4", lz: "4" }, note: "Configuración Videx." }
+        };
+
+        const CONNS = [
+            { id: "a", n: "Abrepuertas", c: "text-blue-600" },
+            { id: "m", n: "Micrófono", c: "text-orange-600" },
+            { id: "g", n: "Masa / Común", c: "text-slate-900" },
+            { id: "s", n: "Altavoz", c: "text-purple-600" },
+            { id: "le", n: "Llamada (Elect)", c: "text-red-600" },
+            { id: "lz", n: "Llamada (Zumb)", c: "text-rose-800" }
+        ];
+
+        // LOGICA DE DIAGNÓSTICO
+        const SINTOMAS = [
+            { texto: "No abre la puerta", borneId: "a", desc: "Revisa la conexión del Abrepuertas." },
+            { texto: "No me oyen abajo", borneId: "m", desc: "Fallo en el Micrófono del teléfono." },
+            { texto: "No escucho la calle", borneId: "s", desc: "Fallo en el Altavoz del teléfono." },
+            { texto: "No suena la llamada", borneId: "le", desc: "Revisa el cable de Llamada." },
+            { texto: "No funciona NADA", borneId: "g", desc: "Masa común desconectada o mal puenteada." },
+            { texto: "Acoplamiento / Ruido", borneId: "g", desc: "Posible masa (común) floja o invertida." }
+        ];
+
+        function populate(selectId, filter = "") {
+            const select = document.getElementById(selectId);
+            select.innerHTML = "";
+            Object.keys(DATA).filter(k => DATA[k].n.toLowerCase().includes(filter.toLowerCase())).forEach(k => {
+                const opt = new Option(DATA[k].n, k);
+                select.add(opt);
+            });
+            if (select.options.length > 0) select.selectedIndex = 0;
+        }
+
+        function diagnosticar(sintoma) {
+            const idD = document.getElementById('selectD').value;
+            const modelD = DATA[idD];
+            const borne = modelD.b[sintoma.borneId];
+            
+            const resDiv = document.getElementById('resultadoDiagnostico');
+            const resTexto = document.getElementById('diagTexto');
+            const resBorne = document.getElementById('diagBorne');
+
+            resTexto.innerText = `${sintoma.desc} en el modelo ${modelD.n}:`;
+            resBorne.innerText = `Borne: ${borne}`;
+            resDiv.classList.remove('hidden');
+            resDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function initDiagnostico() {
+            const grid = document.getElementById('diagnosticoGrid');
+            grid.innerHTML = "";
+            SINTOMAS.forEach(s => {
+                const btn = document.createElement('button');
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl text-xs font-bold transition-all border border-slate-700 text-left flex items-center justify-between";
+                btn.innerHTML = `<span>${s.texto}</span> <span class="text-blue-500">→</span>`;
+                btn.onclick = () => diagnosticar(s);
+                grid.appendChild(btn);
+            });
+        }
+
+        function update() {
+            const idO = document.getElementById('selectO').value;
+            const idD = document.getElementById('selectD').value;
+            if(!idO || !idD) return;
+
+            const mO = DATA[idO]; const mD = DATA[idD];
+            document.getElementById('nameO').innerText = mO.n;
+            document.getElementById('nameD').innerText = mD.n;
+
+            const body = document.getElementById('tableBody');
+            body.innerHTML = "";
+
+            CONNS.forEach(f => {
+                body.innerHTML += `
+                    <div class="grid grid-cols-3 p-4 items-center row-hover">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">${f.n}</div>
+                        <div class="text-center text-xl font-black ${f.c}">${mO.b[f.id]}</div>
+                        <div class="text-center text-xl font-black text-emerald-600 border-l border-slate-50">${mD.b[f.id]}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('tecnico').innerHTML = `
+                <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-xs text-red-800"><strong>Origen:</strong> ${mO.note}</div>
+                <div class="bg-green-50 p-4 rounded-2xl border border-green-100 text-xs text-green-800"><strong>Destino:</strong> ${mD.note}</div>
+            `;
+            
+            // Ocultar diagnóstico si se cambia el modelo para evitar confusiones
+            document.getElementById('resultadoDiagnostico').classList.add('hidden');
+        }
+
+        // Listeners
+        document.getElementById('searchO').addEventListener('input', (e) => populate('selectO', e.target.value));
+        document.getElementById('searchD').addEventListener('input', (e) => populate('selectD', e.target.value));
+        document.getElementById('selectO').addEventListener('change', update);
+        document.getElementById('selectD').addEventListener('change', update);
+
+        // Inicio
+        populate('selectO');
+        populate('selectD');
+        document.getElementById('selectD').value = "golmar_t510r";
+        initDiagnostico();
+        update();
+    </script>
+</body>
+</html>
                 <div>Conexión</div>
                 <div class="text-center" id="nameO">Origen</div>
                 <div class="text-center" id="nameD">Destino</div>
