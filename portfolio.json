@@ -1,0 +1,10 @@
+{
+  "categoria": "Apps",
+  "icono": "📱",
+  "etiquetas": ["utilidad", "herramienta", "gestión"],
+  "descripcion": "Utilidad web de apoyo para tareas de gestión o consulta rápida.",
+  "demo": "",
+  "destacado": false,
+  "orden": 41,
+  "ocultar": false
+}
